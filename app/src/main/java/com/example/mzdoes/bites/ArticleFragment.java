@@ -74,7 +74,7 @@ public class ArticleFragment extends Fragment {
         ArticleFragment fragment = new ArticleFragment();
         Bundle args = new Bundle();
         args.putString("headlineString", article.getTitle());
-        args.putString("descString", article.getDescription());
+        args.putString("descString", "BY "+ article.getSource().getName() + ": " + article.getDescription());
         args.putString("urlImageString", article.getUrlToImage());
         args.putString("urlArticleString", article.getUrl());
         fragment.setArguments(args);
