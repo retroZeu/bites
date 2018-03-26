@@ -21,7 +21,7 @@
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="@+id/guideline_fragmentLeft"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.52"
+        app:layout_constraintVertical_bias="0.75"
         tools:text="Trump did something, I guess." />
 
     <TextView
@@ -32,6 +32,8 @@
         android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
+        android:ellipsize="end"
+        android:maxLines="4"
         android:text="@android:string/paste_as_plain_text"
         android:textAlignment="textStart"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -55,4 +57,5 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         app:layout_constraintGuide_end="17dp" />
+
 </android.support.constraint.ConstraintLayout>

@@ -95,6 +95,7 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
                                 searchedTopic = searchEditText.getText().toString();
+                                searchForSources(newsLanguage, newsCountry);
                                 searchForTopic(searchedTopic);
                             }
                         });
@@ -137,17 +138,20 @@ public class MainActivity extends AppCompatActivity {
                 ArticleList tempArticleResponse = response.body();
 
                 List<Article> tempArticleList = tempArticleResponse.getArticles();
+                // TO FUCKING FIX!!!
+//                List<Article> articlesToRemove = new ArrayList<>();
+//
+//                boolean found = false;
+//                for (Article article : tempArticleList) {
+//                    for (NewsSource source : sources) {
+//                        if ((article.getSource().getId()).equals(source.getId())) { found = true; }
+//                    }
+//                    if (!found) { articlesToRemove.add(article); }
+//                    found = false;
+//                }
+//                tempArticleList.removeAll(articlesToRemove);
 
                 articles.clear();
-
-                for (Article article : tempArticleList) {
-                    for (NewsSource source : sources) {
-                        if (!(source.getId().equals(article.getSource().getId()) && (source.getCountry().equals(newsCountry)) && (source.getLanguage().equals(newsLanguage)))) {
-                            tempArticleList.remove(article);
-                        }
-                    }
-                }
-
                 articles.addAll(tempArticleList);
                 updateWidgets();
             }

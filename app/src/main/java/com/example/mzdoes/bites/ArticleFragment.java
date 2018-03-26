@@ -7,9 +7,13 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
@@ -27,11 +31,11 @@ public class ArticleFragment extends Fragment {
         headlineView.setText(headline);
         descView.setText(description);
 
-        Picasso.with(getContext()).load(urlImage).into(new Target() {
+        Picasso.with(getContext()).load(urlImage).resize(container.getWidth(), container.getHeight()).centerCrop().into(new Target() {
             @Override
             public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
                 BitmapDrawable drawable = new BitmapDrawable(getContext().getResources(), bitmap);
-                drawable.setAlpha(180);
+                drawable.setAlpha(135);
                 view.setBackground(drawable);
             }
 
@@ -58,6 +62,8 @@ public class ArticleFragment extends Fragment {
             }
         });
 
+        this.registerForContextMenu(view);
+
         return view;
     }
 
@@ -79,6 +85,29 @@ public class ArticleFragment extends Fragment {
         args.putString("urlArticleString", article.getUrl());
         fragment.setArguments(args);
         return fragment;
+    }
+
+    @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+        super.onCreateContextMenu(menu, v, menuInfo);
+        MenuInflater inflater = new MenuInflater(this.getContext());
+        inflater.inflate(R.menu.menu_articlecontext, menu);
+    }
+
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+        AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
+        switch (item.getItemId()) {
+            case R.id.item_share:
+                //share
+                return true;
+            case R.id.item_bookmark:
+                //Backendless
+                return true;
+            default:
+                return super.onContextItemSelected(item);
+        }
+
     }
 }
 
