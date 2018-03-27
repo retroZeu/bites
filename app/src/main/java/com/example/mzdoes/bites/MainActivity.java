@@ -31,6 +31,8 @@ public class MainActivity extends AppCompatActivity {
     private List<Article> articles;
     private List<NewsSource> sources;
 
+    private List<Article> bookmarkedArticles;
+
     private TextView totalBitesView;
     private FloatingActionButton biteSearchButton;
 
@@ -41,6 +43,8 @@ public class MainActivity extends AppCompatActivity {
     private Call<ArticleList> articleListCall;
     private Call<SourceList> sourceListCall;
     private NewsAPI api;
+
+    public static final String TAG = "Main Activity";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
     private void setup() {
         articles = new ArrayList<>();
         sources = new ArrayList<>();
+        bookmarkedArticles = new ArrayList<>();
 
         totalBitesView = (TextView) findViewById(R.id.textView_totalBites);
         biteSearchButton = (FloatingActionButton) findViewById(R.id.floatingActionButton_biteSearch);
@@ -74,6 +79,9 @@ public class MainActivity extends AppCompatActivity {
         api = retrofit.create(NewsAPI.class);
 
         searchForSources(newsLanguage, newsCountry);
+        while (sources == null) {
+            Log.d(TAG, "setup: WAITING FOR SOURCES");
+        }
         searchForTopic(searchedTopic);
     }
 
@@ -95,7 +103,6 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
                                 searchedTopic = searchEditText.getText().toString();
-                                searchForSources(newsLanguage, newsCountry);
                                 searchForTopic(searchedTopic);
                             }
                         });
@@ -120,6 +127,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<SourceList> call, Response<SourceList> response) {
                 SourceList tempSourceResponse = response.body();
+//                Log.d(TAG, "TEMP SOURCE RESPONSE: " + tempSourceResponse.toString());
+//                Log.d(TAG, "RESPONSE URL: " + call.request().url());
                 sources.clear();
                 sources.addAll(tempSourceResponse.getSourceList());
             }
@@ -136,20 +145,21 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<ArticleList> call, Response<ArticleList> response) {
                 ArticleList tempArticleResponse = response.body();
-
                 List<Article> tempArticleList = tempArticleResponse.getArticles();
-                // TO FUCKING FIX!!!
-//                List<Article> articlesToRemove = new ArrayList<>();
-//
-//                boolean found = false;
-//                for (Article article : tempArticleList) {
-//                    for (NewsSource source : sources) {
-//                        if ((article.getSource().getId()).equals(source.getId())) { found = true; }
-//                    }
-//                    if (!found) { articlesToRemove.add(article); }
-//                    found = false;
-//                }
-//                tempArticleList.removeAll(articlesToRemove);
+                List<Article> articlesToRemove = new ArrayList<>();
+
+//                Log.d(TAG, "ALL SOURCES: " + sources.toString());
+
+                boolean found = false;
+                for (Article article : tempArticleList) {
+//                    Log.d(TAG, "ARTICLE ID: " + article.getSource().getId().toString() );
+                    for (NewsSource source : sources) {
+                        if ((article.getSource().getId().toString()).equals(source.getId().toString())) { found = true; }
+                    }
+                    if (!found) { articlesToRemove.add(article); }
+                    found = false;
+                }
+                tempArticleList.removeAll(articlesToRemove);
 
                 articles.clear();
                 articles.addAll(tempArticleList);
@@ -169,7 +179,13 @@ public class MainActivity extends AppCompatActivity {
         mPagerAdapter.notifyDataSetChanged();
     }
 
-
+    public void bookmarkArticle(Article articleToSave) {
+        boolean found = false;
+        for (Article article : bookmarkedArticles) {
+            if (articleToSave.equals(article)) { found = true; }
+        }
+        if (!found) { bookmarkedArticles.add(articleToSave); }
+    }
 
     private class ScreenSlidePagerAdapter extends FragmentStatePagerAdapter {
         public ScreenSlidePagerAdapter(FragmentManager fm) {

@@ -1,10 +1,13 @@
 package com.example.mzdoes.bites;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 /**
  * Created by zeucudatcapua2 on 3/22/18.
  */
 
-public class Article {
+public class Article implements Parcelable {
 
     private ShortSource source;
     private String author, title, description, url, urlToImage, publishedAt;
@@ -67,4 +70,31 @@ public class Article {
     public void setPublishedAt(String publishedAt) {
         this.publishedAt = publishedAt;
     }
+
+    protected Article(Parcel in) {
+        source = (ShortSource) in.readValue(ShortSource.class.getClassLoader());
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeValue(source);
+    }
+
+    @SuppressWarnings("unused")
+    public static final Parcelable.Creator<Article> CREATOR = new Parcelable.Creator<Article>() {
+        @Override
+        public Article createFromParcel(Parcel in) {
+            return new Article(in);
+        }
+
+        @Override
+        public Article[] newArray(int size) {
+            return new Article[size];
+        }
+    };
 }

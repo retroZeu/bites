@@ -9,11 +9,11 @@ import java.util.List;
 
 public class SourceList {
     private String status;
-    private List<NewsSource> sourceList;
+    private List<NewsSource> sources;
 
     public SourceList() {
         status = "ok";
-        sourceList = new ArrayList<>();
+        sources = new ArrayList<>();
     }
 
     public String getStatus() {
@@ -24,9 +24,17 @@ public class SourceList {
     }
 
     public List<NewsSource> getSourceList() {
-        return sourceList;
+        return sources;
     }
     public void setSourceList(List<NewsSource> sourceList) {
-        this.sourceList = sourceList;
+        this.sources = sourceList;
+    }
+
+    @Override
+    public String toString() {
+        return "SourceList{" +
+                "status='" + status + '\'' +
+                ", sourceList=" + sources +
+                '}';
     }
 }
