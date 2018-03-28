@@ -13,9 +13,14 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView totalBitesView;
     private FloatingActionButton biteSearchButton;
+    private FloatingActionButton appSettingsButton;
 
     private ViewPager mPager;
     private PagerAdapter mPagerAdapter;
@@ -61,7 +67,8 @@ public class MainActivity extends AppCompatActivity {
 
         totalBitesView = (TextView) findViewById(R.id.textView_totalBites);
         biteSearchButton = (FloatingActionButton) findViewById(R.id.floatingActionButton_biteSearch);
-        setBiteSearchButton();
+        appSettingsButton = (FloatingActionButton) findViewById(R.id.floatingActionButton_appSettings);
+        setButtons();
 
         mPager = (ViewPager) findViewById(R.id.pager);
         mPagerAdapter = new ScreenSlidePagerAdapter(getSupportFragmentManager());
@@ -78,14 +85,10 @@ public class MainActivity extends AppCompatActivity {
 
         api = retrofit.create(NewsAPI.class);
 
-        searchForSources(newsLanguage, newsCountry);
-        while (sources == null) {
-            Log.d(TAG, "setup: WAITING FOR SOURCES");
-        }
-        searchForTopic(searchedTopic);
+        updateArticles();
     }
 
-    private void setBiteSearchButton() {
+    private void setButtons() {
         biteSearchButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -110,6 +113,108 @@ public class MainActivity extends AppCompatActivity {
                 searchDialog.show();
             }
         });
+
+        appSettingsButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                AlertDialog settingsDialog = new AlertDialog.Builder(MainActivity.this).create();
+                LayoutInflater inflater = (MainActivity.this).getLayoutInflater();
+                View theView = inflater.inflate(R.layout.dialog_settings, null);
+                theView.setBackgroundColor(getResources().getColor(R.color.colorDialog));
+                settingsDialog.setView(theView);
+                settingsDialog.setTitle("News Source Settings");
+
+                final String[] chosenLanguage = new String[1];
+                final String[] chosenCountry = new String[1];
+
+                Spinner languageSpinner = (Spinner) theView.findViewById(R.id.spinner_languageSettings);
+                ArrayAdapter<CharSequence> languageAdapter = ArrayAdapter.createFromResource(MainActivity.this, R.array.language_array, android.R.layout.simple_spinner_dropdown_item);
+                languageAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                languageSpinner.setAdapter(languageAdapter);
+
+                languageSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                    @Override
+                    public void onItemSelected(AdapterView<?> adapterView, View view, int pos, long l) {
+                        switch (pos) {
+                            case 1:
+                                chosenLanguage[0] = "en";
+                                break;
+                            case 2:
+                                chosenLanguage[0] = "es";
+                                break;
+                            default:
+                                chosenLanguage[0] = "en";
+                        }
+                    }
+
+                    @Override
+                    public void onNothingSelected(AdapterView<?> adapterView) {
+                        chosenLanguage[0] = null;
+                    }
+                });
+
+                Spinner countrySpinner = (Spinner) theView.findViewById(R.id.spinner_countrySettings);
+                ArrayAdapter<CharSequence> countryAdapter = ArrayAdapter.createFromResource(MainActivity.this, R.array.country_array, android.R.layout.simple_spinner_dropdown_item);
+                countryAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                countrySpinner.setAdapter(countryAdapter);
+
+                countrySpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                    @Override
+                    public void onItemSelected(AdapterView<?> adapterView, View view, int pos, long l) {
+                        switch (pos) {
+                            case 1:
+                                chosenCountry[0] = "us";
+                                break;
+                            case 2:
+                                chosenCountry[0] = "mx";
+                                break;
+                            default:
+                                chosenCountry[0] = "us";
+                        }
+                    }
+
+                    @Override
+                    public void onNothingSelected(AdapterView<?> adapterView) {
+                        chosenCountry[0] = null;
+                    }
+                });
+
+                settingsDialog.setButton(DialogInterface.BUTTON_POSITIVE, "Confirm",
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                newsLanguage = chosenLanguage[0];
+                                newsCountry = chosenCountry[0];
+
+                                updateArticles();
+                            }
+                        });
+
+                settingsDialog.setButton(DialogInterface.BUTTON_NEUTRAL, "Reset",
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                newsLanguage = null;
+                                newsCountry = null;
+
+                                updateArticles();
+                            }
+                        });
+
+                settingsDialog.show();
+            }
+        });
+    }
+
+    private void updateArticles() {
+
+        Log.d(TAG, "updateArticles: " + newsLanguage + ", " + newsCountry );
+
+        searchForSources(newsLanguage, newsCountry);
+        while (sources == null) {
+            Log.d(TAG, "setup: WAITING FOR SOURCES");
+        }
+        searchForTopic(searchedTopic);
     }
 
     private void searchForTopic(String searchedTopic) {
@@ -184,7 +289,16 @@ public class MainActivity extends AppCompatActivity {
         for (Article article : bookmarkedArticles) {
             if (articleToSave.equals(article)) { found = true; }
         }
-        if (!found) { bookmarkedArticles.add(articleToSave); }
+        if (!found) {
+            bookmarkedArticles.add(articleToSave);
+            try {
+                Utility.saveList(this.getApplicationContext(), "apk", bookmarkedArticles);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else { Toast.makeText(this, "This article has already been saved.", Toast.LENGTH_LONG).show(); }
+
+        //Log.d(TAG, "bookmarkArticle: " + bookmarkedArticles.toString());
     }
 
     private class ScreenSlidePagerAdapter extends FragmentStatePagerAdapter {
@@ -201,5 +315,30 @@ public class MainActivity extends AppCompatActivity {
         public int getCount() {
             return articles.size();
         }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        try {
+            Utility.saveList(this.getApplicationContext(), "apk", bookmarkedArticles);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        try {
+            bookmarkedArticles = Utility.readList(this.getApplicationContext(), "apk");
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
     }
 }

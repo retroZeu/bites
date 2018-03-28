@@ -113,7 +113,7 @@ public class ArticleFragment extends Fragment {
                 startActivity(sendIntent);
                 return true;
             case R.id.item_bookmark:
-                //Bookmark
+                ((MainActivity) getActivity()).bookmarkArticle(currentArticle);
                 return true;
             default:
                 return super.onContextItemSelected(item);
