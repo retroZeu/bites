@@ -20,6 +20,8 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.eftimoff.viewpagertransformers.StackTransformer;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,9 +38,8 @@ public class MainActivity extends AppCompatActivity {
     private List<Article> articles; //can be changed from searchedArticles to bookmarkedArticles
     private List<Article> bookmarkedArticles;
     private List<NewsSource> sources;
-    private boolean pagerSetting; //true: searchedArticles, false: bookmarkedArticles
-
-
+    private boolean pagerSetting, articleRefresh; //true: searchedArticles, false: bookmarkedArticles
+    private static final int DEFAULT_ARTICLENUM_LOAD = 20;
 
     private TextView totalBitesView;
     private FloatingActionButton biteSearchButton;
@@ -79,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
         mPager = (ViewPager) findViewById(R.id.pager);
         mPagerAdapter = new ScreenSlidePagerAdapter(getSupportFragmentManager());
         mPager.setAdapter(mPagerAdapter);
+        mPager.setPageTransformer(true, new ParallaxPageTransformer());
 
         searchedTopic = "trump"; //holder topic
         newsLanguage = "en"; //holder language
@@ -229,7 +231,6 @@ public class MainActivity extends AppCompatActivity {
             bookmarkedArticles = Utility.readList(this.getApplicationContext(), "bookmarks");
             newsLanguage = Utility.readString(this.getApplicationContext(), "languageSetting");
             newsCountry = Utility.readString(this.getApplicationContext(), "countrySetting");
-            pagerSetting = Utility.readBool(this.getApplicationContext(), "pagerSetting");
         } catch (IOException e) {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
@@ -246,7 +247,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void searchForTopic(String searchedTopic) {
-        articleListCall = api.getArticleList(searchedTopic, KeySettings.API_KEY, 100);
+        articleListCall = api.getArticleList(searchedTopic, KeySettings.API_KEY, DEFAULT_ARTICLENUM_LOAD);
         enqueueArticleCall();
     }
 

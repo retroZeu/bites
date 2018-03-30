@@ -2,6 +2,8 @@ package com.example.mzdoes.bites;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -15,6 +17,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
@@ -32,9 +35,11 @@ public class ArticleFragment extends Fragment {
         final View view = inflater.inflate(R.layout.fragment_article, container, false);
         TextView headlineView = (TextView) view.findViewById(R.id.textView_fragmentTitle);
         TextView descView = (TextView) view.findViewById(R.id.textView_fragmentDescription);
+        final ImageView imageBGView = (ImageView) view.findViewById(R.id.imageView_fragmentBackground);
 
         headlineView.setText(headline);
         descView.setText(description);
+        view.setBackgroundColor((int) android.R.color.background_dark);
 
         while (this.getContext() == null) {
             Log.d(TAG, "setup: WAITING FOR FRAGMENT CONTEXT");
@@ -44,8 +49,9 @@ public class ArticleFragment extends Fragment {
             @Override
             public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
                 BitmapDrawable drawable = new BitmapDrawable(getContext().getResources(), bitmap);
-                drawable.setAlpha(135);
-                view.setBackground(drawable);
+                //drawable.setAlpha(135);
+                imageBGView.setImageDrawable(drawable);
+                imageBGView.setColorFilter(Color.rgb(123,123,123), PorterDuff.Mode.MULTIPLY);
             }
 
             @Override
