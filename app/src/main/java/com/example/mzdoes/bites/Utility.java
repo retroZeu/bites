@@ -16,14 +16,27 @@ import java.util.List;
 public class Utility {
 
     public static void saveList(Context context, String key, List<Article> articleList) throws IOException {
-        String tempFile = null;
-        for (Article article : articleList) {
-            FileOutputStream fos = context.openFileOutput (key, Context.MODE_PRIVATE);
-            ObjectOutputStream oos = new ObjectOutputStream(fos);
-            oos.writeObject (articleList);
-            oos.close ();
-            fos.close ();
-        }
+        FileOutputStream fos = context.openFileOutput (key, Context.MODE_PRIVATE);
+        ObjectOutputStream oos = new ObjectOutputStream(fos);
+        oos.writeObject (articleList);
+        oos.close ();
+        fos.close ();
+    }
+
+    public static void saveString(Context context, String key, String toSave) throws IOException {
+        FileOutputStream fos = context.openFileOutput(key, Context.MODE_PRIVATE);
+        ObjectOutputStream oos = new ObjectOutputStream(fos);
+        oos.writeObject(toSave);
+        oos.close();
+        fos.close();
+    }
+
+    public static void saveBoolean(Context context, String key, boolean toSave) throws IOException {
+        FileOutputStream fos = context.openFileOutput(key, Context.MODE_PRIVATE);
+        ObjectOutputStream oos = new ObjectOutputStream(fos);
+        oos.writeObject(toSave);
+        oos.close();
+        fos.close();
     }
 
     public static List<Article> readList(Context context, String key) throws IOException, ClassNotFoundException {
@@ -31,5 +44,19 @@ public class Utility {
         ObjectInputStream ois = new ObjectInputStream (fis);
         List<Article> articleList = (List<Article>) ois.readObject();
         return articleList;
+    }
+
+    public static String readString(Context context, String key) throws IOException, ClassNotFoundException {
+        FileInputStream fis = context.openFileInput (key);
+        ObjectInputStream ois = new ObjectInputStream (fis);
+        String string = (String) ois.readObject();
+        return string;
+    }
+
+    public static boolean readBool(Context context, String key) throws IOException, ClassNotFoundException {
+        FileInputStream fis = context.openFileInput (key);
+        ObjectInputStream ois = new ObjectInputStream (fis);
+        boolean theBool = (boolean) ois.readObject();
+        return theBool;
     }
 }

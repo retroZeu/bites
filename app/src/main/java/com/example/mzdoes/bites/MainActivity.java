@@ -33,14 +33,17 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class MainActivity extends AppCompatActivity {
 
     private String searchedTopic, newsLanguage, newsCountry;
-    private List<Article> articles;
-    private List<NewsSource> sources;
-
+    private List<Article> articles; //can be changed from searchedArticles to bookmarkedArticles
     private List<Article> bookmarkedArticles;
+    private List<NewsSource> sources;
+    private boolean pagerSetting; //true: searchedArticles, false: bookmarkedArticles
+
+
 
     private TextView totalBitesView;
     private FloatingActionButton biteSearchButton;
     private FloatingActionButton appSettingsButton;
+    private FloatingActionButton bookmarkToggleButton;
 
     private ViewPager mPager;
     private PagerAdapter mPagerAdapter;
@@ -64,10 +67,13 @@ public class MainActivity extends AppCompatActivity {
         articles = new ArrayList<>();
         sources = new ArrayList<>();
         bookmarkedArticles = new ArrayList<>();
+        pagerSetting = true;
 
         totalBitesView = (TextView) findViewById(R.id.textView_totalBites);
         biteSearchButton = (FloatingActionButton) findViewById(R.id.floatingActionButton_biteSearch);
         appSettingsButton = (FloatingActionButton) findViewById(R.id.floatingActionButton_appSettings);
+        bookmarkToggleButton = (FloatingActionButton) findViewById(R.id.floatingActionButton_showBookmarks);
+
         setButtons();
 
         mPager = (ViewPager) findViewById(R.id.pager);
@@ -85,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
 
         api = retrofit.create(NewsAPI.class);
 
-        updateArticles();
+        updateArticles(pagerSetting);
     }
 
     private void setButtons() {
@@ -136,10 +142,10 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onItemSelected(AdapterView<?> adapterView, View view, int pos, long l) {
                         switch (pos) {
-                            case 1:
+                            case 0:
                                 chosenLanguage[0] = "en";
                                 break;
-                            case 2:
+                            case 1:
                                 chosenLanguage[0] = "es";
                                 break;
                             default:
@@ -149,7 +155,7 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void onNothingSelected(AdapterView<?> adapterView) {
-                        chosenLanguage[0] = null;
+
                     }
                 });
 
@@ -162,10 +168,10 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onItemSelected(AdapterView<?> adapterView, View view, int pos, long l) {
                         switch (pos) {
-                            case 1:
+                            case 0:
                                 chosenCountry[0] = "us";
                                 break;
-                            case 2:
+                            case 1:
                                 chosenCountry[0] = "mx";
                                 break;
                             default:
@@ -175,7 +181,7 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void onNothingSelected(AdapterView<?> adapterView) {
-                        chosenCountry[0] = null;
+
                     }
                 });
 
@@ -186,7 +192,7 @@ public class MainActivity extends AppCompatActivity {
                                 newsLanguage = chosenLanguage[0];
                                 newsCountry = chosenCountry[0];
 
-                                updateArticles();
+                                updateArticles(pagerSetting);
                             }
                         });
 
@@ -197,24 +203,46 @@ public class MainActivity extends AppCompatActivity {
                                 newsLanguage = null;
                                 newsCountry = null;
 
-                                updateArticles();
+                                updateArticles(pagerSetting);
                             }
                         });
 
                 settingsDialog.show();
             }
         });
+
+        bookmarkToggleButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (pagerSetting) { pagerSetting = false; bookmarkToggleButton.setImageResource(R.drawable.ic_arrow_back_black_24dp);}
+                else { pagerSetting = true; bookmarkToggleButton.setImageResource(R.drawable.ic_bookmark_black_24dp); }
+                updateArticles(pagerSetting);
+            }
+        });
     }
 
-    private void updateArticles() {
+    private void updateArticles(boolean pagerForMainList) {
 
-        Log.d(TAG, "updateArticles: " + newsLanguage + ", " + newsCountry );
+//        Log.d(TAG, "updateArticles: " + newsLanguage + ", " + newsCountry );
+
+        try {
+            bookmarkedArticles = Utility.readList(this.getApplicationContext(), "bookmarks");
+            newsLanguage = Utility.readString(this.getApplicationContext(), "languageSetting");
+            newsCountry = Utility.readString(this.getApplicationContext(), "countrySetting");
+            pagerSetting = Utility.readBool(this.getApplicationContext(), "pagerSetting");
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
 
         searchForSources(newsLanguage, newsCountry);
         while (sources == null) {
             Log.d(TAG, "setup: WAITING FOR SOURCES");
         }
-        searchForTopic(searchedTopic);
+
+        if (pagerForMainList) { searchForTopic(searchedTopic); }
+        else { articles = bookmarkedArticles; updateWidgets(); }
     }
 
     private void searchForTopic(String searchedTopic) {
@@ -279,7 +307,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateWidgets() {
-        totalBitesView.setText(articles.size() + " bites about '" + searchedTopic + "'");
+        if (pagerSetting) { totalBitesView.setText(articles.size() + " bites about '" + searchedTopic + "'"); }
+        else { totalBitesView.setText(articles.size() + " saved bites");}
 
         mPagerAdapter.notifyDataSetChanged();
     }
@@ -292,7 +321,7 @@ public class MainActivity extends AppCompatActivity {
         if (!found) {
             bookmarkedArticles.add(articleToSave);
             try {
-                Utility.saveList(this.getApplicationContext(), "apk", bookmarkedArticles);
+                Utility.saveList(this.getApplicationContext(), "bookmarks", bookmarkedArticles);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -322,7 +351,10 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
 
         try {
-            Utility.saveList(this.getApplicationContext(), "apk", bookmarkedArticles);
+            Utility.saveList(this.getApplicationContext(), "bookmarks", bookmarkedArticles);
+            Utility.saveString(this.getApplicationContext(), "languageSetting", newsLanguage);
+            Utility.saveString(this.getApplicationContext(), "countrySetting", newsCountry);
+            Utility.saveBoolean(this.getApplicationContext(), "pagerSetting", pagerSetting);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -333,12 +365,22 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
 
         try {
-            bookmarkedArticles = Utility.readList(this.getApplicationContext(), "apk");
+            bookmarkedArticles = Utility.readList(this.getApplicationContext(), "bookmarks");
+            newsLanguage = Utility.readString(this.getApplicationContext(), "languageSetting");
+            newsCountry = Utility.readString(this.getApplicationContext(), "countrySetting");
+            pagerSetting = Utility.readBool(this.getApplicationContext(), "pagerSetting");
         } catch (IOException e) {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
 
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        pagerSetting = true;
+        searchedTopic = null;
     }
 }

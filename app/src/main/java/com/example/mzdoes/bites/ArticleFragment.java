@@ -7,6 +7,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.MenuInflater;
@@ -24,6 +25,8 @@ public class ArticleFragment extends Fragment {
     private String headline, description, urlImage, urlArticle, sourceName;
     private Article currentArticle;
 
+    private static final String TAG = "ArticleFragment";
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         final View view = inflater.inflate(R.layout.fragment_article, container, false);
@@ -32,6 +35,10 @@ public class ArticleFragment extends Fragment {
 
         headlineView.setText(headline);
         descView.setText(description);
+
+        while (this.getContext() == null) {
+            Log.d(TAG, "setup: WAITING FOR FRAGMENT CONTEXT");
+        }
 
         Picasso.with(getContext()).load(urlImage).resize(container.getWidth(), container.getHeight()).centerCrop().into(new Target() {
             @Override
@@ -72,23 +79,19 @@ public class ArticleFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        headline = getArguments().getString("headlineString");
-        description = getArguments().getString("descString");
-        sourceName = getArguments().getString("sourceNameString");
-        urlImage = getArguments().getString("urlImageString");
-        urlArticle = getArguments().getString("urlArticleString");
         currentArticle = getArguments().getParcelable("currentArticle");
+        headline = currentArticle.getTitle();
+        description = getArguments().getString("descString");
+        sourceName = currentArticle.getSource().getName();
+        urlImage = currentArticle.getUrlToImage();
+        urlArticle = currentArticle.getUrl();
     }
 
     public static ArticleFragment newInstance(Article article) {
         ArticleFragment fragment = new ArticleFragment();
         Bundle args = new Bundle();
-        args.putString("headlineString", article.getTitle());
-        args.putString("sourceNameString", article.getSource().getName());
-        args.putString("descString", "BY "+ article.getSource().getName() + ": " + article.getDescription());
-        args.putString("urlImageString", article.getUrlToImage());
-        args.putString("urlArticleString", article.getUrl());
         args.putParcelable("currentArticle", article);
+        args.putString("descString", "BY "+ article.getSource().getName() + ": " + article.getDescription());
         fragment.setArguments(args);
         return fragment;
     }
