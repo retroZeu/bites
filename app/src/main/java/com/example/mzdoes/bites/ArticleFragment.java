@@ -19,6 +19,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
@@ -26,6 +27,7 @@ import com.squareup.picasso.Target;
 public class ArticleFragment extends Fragment {
 
     private String headline, description, urlImage, urlArticle, sourceName;
+    private static final String URL_BLACK_IMAGE = "https://vignette.wikia.nocookie.net/joke-battles/images/5/5a/Black.jpg/revision/latest?cb=20161223050425";
     private Article currentArticle;
 
     private static final String TAG = "ArticleFragment";
@@ -45,26 +47,48 @@ public class ArticleFragment extends Fragment {
             Log.d(TAG, "setup: WAITING FOR FRAGMENT CONTEXT");
         }
 
-        Picasso.with(getContext()).load(urlImage).resize(container.getWidth(), container.getHeight()).centerCrop().into(new Target() {
-            @Override
-            public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                BitmapDrawable drawable = new BitmapDrawable(getContext().getResources(), bitmap);
-                //drawable.setAlpha(135);
-                imageBGView.setImageDrawable(drawable);
-                imageBGView.setColorFilter(Color.rgb(123,123,123), PorterDuff.Mode.MULTIPLY);
-            }
+        if (urlImage != null) {
 
-            @Override
-            public void onBitmapFailed(Drawable errorDrawable) {
+            Picasso.with(getContext()).load(urlImage).resize(container.getWidth(), container.getHeight()).centerCrop().into(new Target() {
+                @Override
+                public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+                    BitmapDrawable drawable = new BitmapDrawable(getContext().getResources(), bitmap);
+                    //drawable.setAlpha(135);
+                    imageBGView.setImageDrawable(drawable);
+                    imageBGView.setColorFilter(Color.rgb(123, 123, 123), PorterDuff.Mode.MULTIPLY);
+                }
 
-            }
+                @Override
+                public void onBitmapFailed(Drawable errorDrawable) {
 
-            @Override
-            public void onPrepareLoad(Drawable placeHolderDrawable) {
+                }
 
-            }
-        });
+                @Override
+                public void onPrepareLoad(Drawable placeHolderDrawable) {
 
+                }
+            });
+        } else {
+            Picasso.with(getContext()).load(URL_BLACK_IMAGE).resize(container.getWidth(), container.getHeight()).centerCrop().into(new Target() {
+                @Override
+                public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+                    BitmapDrawable drawable = new BitmapDrawable(getContext().getResources(), bitmap);
+                    //drawable.setAlpha(135);
+                    imageBGView.setImageDrawable(drawable);
+                    imageBGView.setColorFilter(Color.rgb(255, 255, 255), PorterDuff.Mode.MULTIPLY);
+                }
+
+                @Override
+                public void onBitmapFailed(Drawable errorDrawable) {
+
+                }
+
+                @Override
+                public void onPrepareLoad(Drawable placeHolderDrawable) {
+
+                }
+            });
+        }
         view.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -123,6 +147,7 @@ public class ArticleFragment extends Fragment {
                 return true;
             case R.id.item_bookmark:
                 ((MainActivity) getActivity()).bookmarkArticle(currentArticle);
+                Toast.makeText(getActivity(), "Article saved!", Toast.LENGTH_SHORT).show();
                 return true;
             default:
                 return super.onContextItemSelected(item);

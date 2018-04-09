@@ -20,7 +20,7 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.eftimoff.viewpagertransformers.StackTransformer;
+//import com.eftimoff.viewpagertransformers.StackTransformer;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -38,7 +38,8 @@ public class MainActivity extends AppCompatActivity {
     private List<Article> articles; //can be changed from searchedArticles to bookmarkedArticles
     private List<Article> bookmarkedArticles;
     private List<NewsSource> sources;
-    private boolean pagerSetting, articleRefresh; //true: searchedArticles, false: bookmarkedArticles
+    private boolean pagerSetting; //true: searchedArticles, false: bookmarkedArticles
+    private int articleRefreshState; //0 = havent refreshed for more, 1 = add 10, etc. all the way to 8 for all 100 articles loaded.
     private static final int DEFAULT_ARTICLENUM_LOAD = 20;
 
     private TextView totalBitesView;
@@ -69,6 +70,7 @@ public class MainActivity extends AppCompatActivity {
         sources = new ArrayList<>();
         bookmarkedArticles = new ArrayList<>();
         pagerSetting = true;
+        articleRefreshState = 0;
 
         totalBitesView = (TextView) findViewById(R.id.textView_totalBites);
         biteSearchButton = (FloatingActionButton) findViewById(R.id.floatingActionButton_biteSearch);
@@ -78,6 +80,57 @@ public class MainActivity extends AppCompatActivity {
         setButtons();
 
         mPager = (ViewPager) findViewById(R.id.pager);
+        mPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+            boolean lastPageChange = false;
+
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+
+            }
+            @Override
+            public void onPageSelected(int position) {
+
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+                if (pagerSetting) {
+                    int lastIdx = mPagerAdapter.getCount() - 1;
+
+                    int curItem = mPager.getCurrentItem();
+                    if (curItem == lastIdx && state == 1) {
+                        lastPageChange = true;
+
+                        if (articleRefreshState != 8) {
+                            final AlertDialog refreshDialog = new AlertDialog.Builder(MainActivity.this).create();
+                            refreshDialog.setTitle("Refresh for more articles?");
+
+                            refreshDialog.setButton(DialogInterface.BUTTON_POSITIVE, "Yes",
+                                    new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialogInterface, int i) {
+                                            articleRefreshState += 1;
+                                            searchForTopic(searchedTopic, articleRefreshState);
+                                        }
+                                    });
+                            refreshDialog.setButton(DialogInterface.BUTTON_NEUTRAL, "No",
+                                    new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialogInterface, int i) {
+                                            refreshDialog.dismiss();
+                                        }
+                                    });
+
+                            refreshDialog.show();
+                        } else {
+                            Toast.makeText(MainActivity.this, "Cannot load any more articles!", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        lastPageChange = false;
+                    }
+                }
+            }
+        });
         mPagerAdapter = new ScreenSlidePagerAdapter(getSupportFragmentManager());
         mPager.setAdapter(mPagerAdapter);
         mPager.setPageTransformer(true, new ParallaxPageTransformer());
@@ -114,7 +167,7 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
                                 searchedTopic = searchEditText.getText().toString();
-                                searchForTopic(searchedTopic);
+                                searchForTopic(searchedTopic, articleRefreshState);
                             }
                         });
 
@@ -194,7 +247,7 @@ public class MainActivity extends AppCompatActivity {
                                 newsLanguage = chosenLanguage[0];
                                 newsCountry = chosenCountry[0];
 
-                                updateArticles(pagerSetting);
+                                searchForTopic(searchedTopic, 0);
                             }
                         });
 
@@ -205,7 +258,7 @@ public class MainActivity extends AppCompatActivity {
                                 newsLanguage = null;
                                 newsCountry = null;
 
-                                updateArticles(pagerSetting);
+                                searchForTopic(searchedTopic, 0);
                             }
                         });
 
@@ -216,38 +269,120 @@ public class MainActivity extends AppCompatActivity {
         bookmarkToggleButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (pagerSetting) { pagerSetting = false; bookmarkToggleButton.setImageResource(R.drawable.ic_arrow_back_black_24dp);}
-                else { pagerSetting = true; bookmarkToggleButton.setImageResource(R.drawable.ic_bookmark_black_24dp); }
+                if (pagerSetting) {
+                    pagerSetting = false;
+                    bookmarkToggleButton.setImageResource(R.drawable.ic_arrow_back_black_24dp);
+                    biteSearchButton.setImageResource(R.drawable.ic_clear_all_black_24dp);
+                    biteSearchButton.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            final AlertDialog clearBookmarksDialog = new AlertDialog.Builder(MainActivity.this).create();
+                            clearBookmarksDialog.setTitle("Clear all bookmarks?");
+
+                            clearBookmarksDialog.setButton(DialogInterface.BUTTON_POSITIVE, "Yes",
+                                    new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialogInterface, int i) {
+                                            bookmarkedArticles.clear();
+                                            pagerSetting = true;
+                                            bookmarkToggleButton.setImageResource(R.drawable.ic_bookmark_black_24dp);
+                                            biteSearchButton.setImageResource(R.drawable.ic_navigation_black_24dp);
+                                            biteSearchButton.setOnClickListener(new View.OnClickListener() {
+                                                @Override
+                                                public void onClick(View view) {
+                                                    AlertDialog searchDialog = new AlertDialog.Builder(MainActivity.this).create();
+                                                    LayoutInflater inflater = (MainActivity.this).getLayoutInflater();
+                                                    View theView = inflater.inflate(R.layout.dialog_search, null);
+                                                    theView.setBackgroundColor(getResources().getColor(R.color.colorDialog));
+                                                    searchDialog.setView(theView);
+                                                    searchDialog.setTitle(null);
+
+                                                    final EditText searchEditText = theView.findViewById(R.id.editText_searchTopic);
+
+                                                    searchDialog.setButton(DialogInterface.BUTTON_POSITIVE, "Search",
+                                                            new DialogInterface.OnClickListener() {
+                                                                @Override
+                                                                public void onClick(DialogInterface dialogInterface, int i) {
+                                                                    searchedTopic = searchEditText.getText().toString();
+                                                                    searchForTopic(searchedTopic, articleRefreshState);
+                                                                }
+                                                            });
+
+                                                    searchDialog.show();
+                                                }
+                                            });
+                                        }
+                                    });
+                            clearBookmarksDialog.setButton(DialogInterface.BUTTON_NEUTRAL, "No",
+                                    new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialogInterface, int i) {
+                                            clearBookmarksDialog.dismiss();
+                                        }
+                                    });
+
+                            clearBookmarksDialog.show();
+                        }
+                    });
+                } else {
+                    pagerSetting = true; bookmarkToggleButton.setImageResource(R.drawable.ic_bookmark_black_24dp);
+                    biteSearchButton.setImageResource(R.drawable.ic_navigation_black_24dp);
+                    biteSearchButton.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            AlertDialog searchDialog = new AlertDialog.Builder(MainActivity.this).create();
+                            LayoutInflater inflater = (MainActivity.this).getLayoutInflater();
+                            View theView = inflater.inflate(R.layout.dialog_search, null);
+                            theView.setBackgroundColor(getResources().getColor(R.color.colorDialog));
+                            searchDialog.setView(theView);
+                            searchDialog.setTitle(null);
+
+                            final EditText searchEditText = theView.findViewById(R.id.editText_searchTopic);
+
+                            searchDialog.setButton(DialogInterface.BUTTON_POSITIVE, "Search",
+                                    new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialogInterface, int i) {
+                                            searchedTopic = searchEditText.getText().toString();
+                                            searchForTopic(searchedTopic, articleRefreshState);
+                                        }
+                                    });
+
+                            searchDialog.show();
+                        }
+                    });}
                 updateArticles(pagerSetting);
             }
         });
+
     }
 
     private void updateArticles(boolean pagerForMainList) {
 
 //        Log.d(TAG, "updateArticles: " + newsLanguage + ", " + newsCountry );
 
-        try {
-            bookmarkedArticles = Utility.readList(this.getApplicationContext(), "bookmarks");
-            newsLanguage = Utility.readString(this.getApplicationContext(), "languageSetting");
-            newsCountry = Utility.readString(this.getApplicationContext(), "countrySetting");
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            bookmarkedArticles = Utility.readList(this.getApplicationContext(), "bookmarks");
+//            newsLanguage = Utility.readString(this.getApplicationContext(), "languageSetting");
+//            newsCountry = Utility.readString(this.getApplicationContext(), "countrySetting");
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        } catch (ClassNotFoundException e) {
+//            e.printStackTrace();
+//        }
 
         searchForSources(newsLanguage, newsCountry);
         while (sources == null) {
             Log.d(TAG, "setup: WAITING FOR SOURCES");
         }
 
-        if (pagerForMainList) { searchForTopic(searchedTopic); }
+        if (pagerForMainList) { searchForTopic(searchedTopic, articleRefreshState); }
         else { articles = bookmarkedArticles; updateWidgets(); }
     }
 
-    private void searchForTopic(String searchedTopic) {
-        articleListCall = api.getArticleList(searchedTopic, KeySettings.API_KEY, DEFAULT_ARTICLENUM_LOAD);
+    private void searchForTopic(String searchedTopic, int articleRefreshState) {
+        if (articleRefreshState == 0) { articleListCall = api.getArticleList(searchedTopic, KeySettings.API_KEY, DEFAULT_ARTICLENUM_LOAD); }
+        else { articleListCall = api.getArticleList(searchedTopic, KeySettings.API_KEY, DEFAULT_ARTICLENUM_LOAD + (articleRefreshState * 10)); }
         enqueueArticleCall();
     }
 
@@ -312,6 +447,7 @@ public class MainActivity extends AppCompatActivity {
         else { totalBitesView.setText(articles.size() + " saved bites");}
 
         mPagerAdapter.notifyDataSetChanged();
+        mPager.setCurrentItem(0);
     }
 
     public void bookmarkArticle(Article articleToSave) {
