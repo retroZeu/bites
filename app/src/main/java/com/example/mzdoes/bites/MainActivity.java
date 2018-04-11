@@ -34,28 +34,27 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
 
-    private String searchedTopic, newsLanguage, newsCountry;
-    private List<Article> articles; //can be changed from searchedArticles to bookmarkedArticles
-    private List<Article> bookmarkedArticles;
-    private List<NewsSource> sources;
-    private boolean pagerSetting; //true: searchedArticles, false: bookmarkedArticles
-    private int articleRefreshState; //0 = havent refreshed for more, 1 = add 10, etc. all the way to 8 for all 100 articles loaded.
-    private static final int DEFAULT_ARTICLENUM_LOAD = 20;
+    private String               searchedTopic, newsLanguage, newsCountry;
+    private List<Article>        articles;  //can be changed from searchedArticles to bookmarkedArticles
+    private List<Article>        bookmarkedArticles;
+    private List<NewsSource>     sources;
+    private boolean              pagerSetting;  //true: searchedArticles, false: bookmarkedArticles
+    private int                  articleRefreshState;   //0 = havent refreshed for more, 1 = add 10, etc. all the way to 8 for all 100 articles loaded.
 
-    private TextView totalBitesView;
+    private TextView             totalBitesView;
     private FloatingActionButton biteSearchButton;
     private FloatingActionButton appSettingsButton;
     private FloatingActionButton bookmarkToggleButton;
 
-    private ViewPager mPager;
-    private PagerAdapter mPagerAdapter;
+    private ViewPager            mPager;
+    private PagerAdapter         mPagerAdapter;
 
+    private Call<ArticleList>    articleListCall;
+    private Call<SourceList>     sourceListCall;
+    private NewsAPI              api;
 
-    private Call<ArticleList> articleListCall;
-    private Call<SourceList> sourceListCall;
-    private NewsAPI api;
-
-    public static final String TAG = "Main Activity";
+    public static final String   TAG = "Main Activity";
+    private static final int     DEFAULT_ARTICLENUM_LOAD = 20;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,6 +64,8 @@ public class MainActivity extends AppCompatActivity {
         setup();
     }
 
+
+    /** SETUP **/
     private void setup() {
         articles = new ArrayList<>();
         sources = new ArrayList<>();
@@ -269,94 +270,118 @@ public class MainActivity extends AppCompatActivity {
         bookmarkToggleButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (pagerSetting) {
-                    pagerSetting = false;
-                    bookmarkToggleButton.setImageResource(R.drawable.ic_arrow_back_black_24dp);
-                    biteSearchButton.setImageResource(R.drawable.ic_clear_all_black_24dp);
-                    biteSearchButton.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View view) {
-                            final AlertDialog clearBookmarksDialog = new AlertDialog.Builder(MainActivity.this).create();
-                            clearBookmarksDialog.setTitle("Clear all bookmarks?");
+                try {
+                    bookmarkedArticles = Utility.readList(MainActivity.this.getApplicationContext(), "bookmarks");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
 
-                            clearBookmarksDialog.setButton(DialogInterface.BUTTON_POSITIVE, "Yes",
-                                    new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialogInterface, int i) {
-                                            bookmarkedArticles.clear();
-                                            pagerSetting = true;
-                                            bookmarkToggleButton.setImageResource(R.drawable.ic_bookmark_black_24dp);
-                                            biteSearchButton.setImageResource(R.drawable.ic_navigation_black_24dp);
-                                            biteSearchButton.setOnClickListener(new View.OnClickListener() {
-                                                @Override
-                                                public void onClick(View view) {
-                                                    AlertDialog searchDialog = new AlertDialog.Builder(MainActivity.this).create();
-                                                    LayoutInflater inflater = (MainActivity.this).getLayoutInflater();
-                                                    View theView = inflater.inflate(R.layout.dialog_search, null);
-                                                    theView.setBackgroundColor(getResources().getColor(R.color.colorDialog));
-                                                    searchDialog.setView(theView);
-                                                    searchDialog.setTitle(null);
+                if (bookmarkedArticles.size() == 0) { Toast.makeText(MainActivity.this, "No articles saved to see!", Toast.LENGTH_LONG).show(); }
+                else {
+                    if (pagerSetting) {
+                        pagerSetting = false;
+                        bookmarkToggleButton.setImageResource(R.drawable.ic_arrow_back_black_24dp);
+                        biteSearchButton.setImageResource(R.drawable.ic_clear_all_black_24dp);
+                        biteSearchButton.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                final AlertDialog clearBookmarksDialog = new AlertDialog.Builder(MainActivity.this).create();
+                                clearBookmarksDialog.setTitle("Clear all bookmarks?");
 
-                                                    final EditText searchEditText = theView.findViewById(R.id.editText_searchTopic);
+                                clearBookmarksDialog.setButton(DialogInterface.BUTTON_POSITIVE, "Yes",
+                                        new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialogInterface, int i) {
+                                                bookmarkedArticles.clear();
+                                                pagerSetting = true;
+                                                bookmarkToggleButton.setImageResource(R.drawable.ic_bookmark_black_24dp);
+                                                updateBiteSearchButton(pagerSetting);
+                                                updateArticles(pagerSetting);
+                                            }
+                                        });
+                                clearBookmarksDialog.setButton(DialogInterface.BUTTON_NEUTRAL, "No",
+                                        new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialogInterface, int i) {
+                                                clearBookmarksDialog.dismiss();
+                                            }
+                                        });
 
-                                                    searchDialog.setButton(DialogInterface.BUTTON_POSITIVE, "Search",
-                                                            new DialogInterface.OnClickListener() {
-                                                                @Override
-                                                                public void onClick(DialogInterface dialogInterface, int i) {
-                                                                    searchedTopic = searchEditText.getText().toString();
-                                                                    searchForTopic(searchedTopic, articleRefreshState);
-                                                                }
-                                                            });
-
-                                                    searchDialog.show();
-                                                }
-                                            });
-                                        }
-                                    });
-                            clearBookmarksDialog.setButton(DialogInterface.BUTTON_NEUTRAL, "No",
-                                    new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialogInterface, int i) {
-                                            clearBookmarksDialog.dismiss();
-                                        }
-                                    });
-
-                            clearBookmarksDialog.show();
-                        }
-                    });
-                } else {
-                    pagerSetting = true; bookmarkToggleButton.setImageResource(R.drawable.ic_bookmark_black_24dp);
-                    biteSearchButton.setImageResource(R.drawable.ic_navigation_black_24dp);
-                    biteSearchButton.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View view) {
-                            AlertDialog searchDialog = new AlertDialog.Builder(MainActivity.this).create();
-                            LayoutInflater inflater = (MainActivity.this).getLayoutInflater();
-                            View theView = inflater.inflate(R.layout.dialog_search, null);
-                            theView.setBackgroundColor(getResources().getColor(R.color.colorDialog));
-                            searchDialog.setView(theView);
-                            searchDialog.setTitle(null);
-
-                            final EditText searchEditText = theView.findViewById(R.id.editText_searchTopic);
-
-                            searchDialog.setButton(DialogInterface.BUTTON_POSITIVE, "Search",
-                                    new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialogInterface, int i) {
-                                            searchedTopic = searchEditText.getText().toString();
-                                            searchForTopic(searchedTopic, articleRefreshState);
-                                        }
-                                    });
-
-                            searchDialog.show();
-                        }
-                    });}
-                updateArticles(pagerSetting);
+                                clearBookmarksDialog.show();
+                            }
+                        });
+                    } else {
+                        pagerSetting = true;
+                        bookmarkToggleButton.setImageResource(R.drawable.ic_bookmark_black_24dp);
+                        updateBiteSearchButton(pagerSetting);
+                    }
+                    updateArticles(pagerSetting);
+                }
             }
         });
 
     }
 
+    private void updateBiteSearchButton(boolean pagerSetting) {
+        if (pagerSetting) {
+            biteSearchButton.setImageResource(R.drawable.ic_navigation_black_24dp);
+            biteSearchButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    AlertDialog searchDialog = new AlertDialog.Builder(MainActivity.this).create();
+                    LayoutInflater inflater = (MainActivity.this).getLayoutInflater();
+                    View theView = inflater.inflate(R.layout.dialog_search, null);
+                    theView.setBackgroundColor(getResources().getColor(R.color.colorDialog));
+                    searchDialog.setView(theView);
+                    searchDialog.setTitle(null);
+
+                    final EditText searchEditText = theView.findViewById(R.id.editText_searchTopic);
+
+                    searchDialog.setButton(DialogInterface.BUTTON_POSITIVE, "Search",
+                            new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    searchedTopic = searchEditText.getText().toString();
+                                    searchForTopic(searchedTopic, articleRefreshState);
+                                }
+                            });
+
+                    searchDialog.show();
+                }
+            });
+        } else {
+            biteSearchButton.setImageResource(R.drawable.ic_navigation_black_24dp);
+            biteSearchButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    AlertDialog searchDialog = new AlertDialog.Builder(MainActivity.this).create();
+                    LayoutInflater inflater = (MainActivity.this).getLayoutInflater();
+                    View theView = inflater.inflate(R.layout.dialog_search, null);
+                    theView.setBackgroundColor(getResources().getColor(R.color.colorDialog));
+                    searchDialog.setView(theView);
+                    searchDialog.setTitle(null);
+
+                    final EditText searchEditText = theView.findViewById(R.id.editText_searchTopic);
+
+                    searchDialog.setButton(DialogInterface.BUTTON_POSITIVE, "Search",
+                            new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    searchedTopic = searchEditText.getText().toString();
+                                    searchForTopic(searchedTopic, articleRefreshState);
+                                }
+                            });
+
+                    searchDialog.show();
+                }
+            });
+        }
+    }
+
+
+    /** APP FUNCTIONS **/
     private void updateArticles(boolean pagerForMainList) {
 
 //        Log.d(TAG, "updateArticles: " + newsLanguage + ", " + newsCountry );
@@ -467,6 +492,8 @@ public class MainActivity extends AppCompatActivity {
         //Log.d(TAG, "bookmarkArticle: " + bookmarkedArticles.toString());
     }
 
+
+    /** MISCELLANEOUS **/
     private class ScreenSlidePagerAdapter extends FragmentStatePagerAdapter {
         public ScreenSlidePagerAdapter(FragmentManager fm) {
             super(fm);

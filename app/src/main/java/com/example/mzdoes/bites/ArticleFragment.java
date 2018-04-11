@@ -47,7 +47,7 @@ public class ArticleFragment extends Fragment {
             Log.d(TAG, "setup: WAITING FOR FRAGMENT CONTEXT");
         }
 
-        if (urlImage != null) {
+        if (!(urlImage.isEmpty())) {
 
             Picasso.with(getContext()).load(urlImage).resize(container.getWidth(), container.getHeight()).centerCrop().into(new Target() {
                 @Override

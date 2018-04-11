@@ -1,5 +1,6 @@
 package com.example.mzdoes.bites;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,7 +8,7 @@ import java.util.List;
  * Created by zeucudatcapua2 on 3/22/18.
  */
 
-public class ArticleList {
+public class ArticleList implements Serializable {
 
     private String status; private int totalResults;
     private List<Article> articles;

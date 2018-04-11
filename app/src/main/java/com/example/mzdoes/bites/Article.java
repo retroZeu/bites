@@ -3,11 +3,13 @@ package com.example.mzdoes.bites;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import java.io.Serializable;
+
 /**
  * Created by zeucudatcapua2 on 3/22/18.
  */
 
-public class Article implements Parcelable {
+public class Article implements Parcelable, Serializable {
 
     private ShortSource source;
     private String author, title, description, url, urlToImage, publishedAt;

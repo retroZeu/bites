@@ -1,10 +1,12 @@
 package com.example.mzdoes.bites;
 
+import java.io.Serializable;
+
 /**
  * Created by zeucudatcapua2 on 3/22/18.
  */
 
-public class NewsSource {
+public class NewsSource implements Serializable {
     private String id, name, description, url, category,
                    language, country;
 
