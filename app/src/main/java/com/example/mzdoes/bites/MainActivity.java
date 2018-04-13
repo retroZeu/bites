@@ -38,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
     private List<Article>        articles;  //can be changed from searchedArticles to bookmarkedArticles
     private List<Article>        bookmarkedArticles;
     private List<NewsSource>     sources;
-    private boolean              pagerSetting;  //true: searchedArticles, false: bookmarkedArticles
+    public  boolean               pagerSetting;  //true: searchedArticles, false: bookmarkedArticles
     private int                  articleRefreshState;   //0 = havent refreshed for more, 1 = add 10, etc. all the way to 8 for all 100 articles loaded.
 
     private TextView             totalBitesView;
@@ -421,10 +421,14 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<SourceList> call, Response<SourceList> response) {
                 SourceList tempSourceResponse = response.body();
+                if (tempSourceResponse.getSourceList() == null || tempSourceResponse.getSourceList().isEmpty()) {
+                    Toast.makeText(MainActivity.this, "No available sources with Search settings. Please change!", Toast.LENGTH_LONG).show();
+                } else {
 //                Log.d(TAG, "TEMP SOURCE RESPONSE: " + tempSourceResponse.toString());
 //                Log.d(TAG, "RESPONSE URL: " + call.request().url());
-                sources.clear();
-                sources.addAll(tempSourceResponse.getSourceList());
+                    sources.clear();
+                    sources.addAll(tempSourceResponse.getSourceList());
+                }
             }
 
             @Override
@@ -440,24 +444,29 @@ public class MainActivity extends AppCompatActivity {
             public void onResponse(Call<ArticleList> call, Response<ArticleList> response) {
                 ArticleList tempArticleResponse = response.body();
                 List<Article> tempArticleList = tempArticleResponse.getArticles();
-                List<Article> articlesToRemove = new ArrayList<>();
-
-//                Log.d(TAG, "ALL SOURCES: " + sources.toString());
-
-                boolean found = false;
-                for (Article article : tempArticleList) {
-//                    Log.d(TAG, "ARTICLE ID: " + article.getSource().getId().toString() );
-                    for (NewsSource source : sources) {
-                        if ((article.getSource().getId().toString()).equals(source.getId().toString())) { found = true; }
+                if (tempArticleList == null || tempArticleList.isEmpty()) {
+                    Toast.makeText(MainActivity.this, "No articles found.", Toast.LENGTH_SHORT).show();
+                } else {
+                    List<Article> articlesToRemove = new ArrayList<>();
+//                  Log.d(TAG, "ALL SOURCES: " + sources.toString());
+                    boolean found = false;
+                    for (Article article : tempArticleList) {
+//                   Log.d(TAG, "ARTICLE ID: " + article.getSource().getId().toString() );
+                        for (NewsSource source : sources) {
+                            if ((article.getSource().getId().toString()).equals(source.getId().toString())) {
+                                found = true;
+                            }
+                        }
+                        if (!found) {
+                            articlesToRemove.add(article);
+                        }
+                        found = false;
                     }
-                    if (!found) { articlesToRemove.add(article); }
-                    found = false;
+                    tempArticleList.removeAll(articlesToRemove);
+                    articles.clear();
+                    articles.addAll(tempArticleList);
+                    updateWidgets();
                 }
-                tempArticleList.removeAll(articlesToRemove);
-
-                articles.clear();
-                articles.addAll(tempArticleList);
-                updateWidgets();
             }
 
             @Override
